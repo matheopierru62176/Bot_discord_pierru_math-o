@@ -1,4 +1,4 @@
-// leveling.js
+
 const { EmbedBuilder } = require('discord.js');
 
 const fs = require('fs');
@@ -26,21 +26,17 @@ module.exports = {
     once : false,
     execute(message) {  
 
-                // Vérifier si le message provient d'un bot ou est envoyé dans un canal DM
         if (message.author.bot || !message.guild) return;
 
-        // Obtenir l'ID de l'utilisateur
         const userId = message.author.id;
 
-        // Vérifier si l'utilisateur est en cooldown
         if (cooldowns.has(userId)) {
             const expirationTime = cooldowns.get(userId);
             if (Date.now() < expirationTime) {
-                return; // Ignorer le message si l'utilisateur est en cooldown
+                return; 
             }
         }
 
-        // Initialiser les points d'expérience pour l'utilisateur s'il n'est pas dans les données
         if (!levelsData[userId]) {
             levelsData[userId] = {
                 xp: 0,
@@ -48,35 +44,27 @@ module.exports = {
             };
         }
 
-        // Ajouter des points d'expérience pour chaque message
         levelsData[userId].xp += xpPerMessage;
 
-        // Calculer l'expérience nécessaire pour passer au niveau suivant
         const levelUpXp = Math.floor(baseLevelUpXp * Math.pow(xpIncreaseFactor, levelsData[userId].level - 1));
 
-        // Vérifier si l'utilisateur a gagné un niveau
         if (levelsData[userId].xp >= levelUpXp) {
             levelsData[userId].xp -= levelUpXp;
             levelsData[userId].level += 1;
         
-            // Créer un embed pour le message
             const embed = new EmbedBuilder()
                 .setColor('#0099ff')
                 .setTitle('Niveau supérieur !')
                 .setDescription(`Félicitations, ${message.author.tag} ! \n  Tu es maintenant niveau ${levelsData[userId].level} !`)
                 .setThumbnail(message.author.displayAvatarURL({ dynamic: true }));
         
-            // Envoyer l'embed
             message.channel.send({ embeds: [embed] });
         
-            // Mettre à jour l'expérience nécessaire pour le prochain niveau
             levelsData[userId].nextLevelXp = Math.floor(baseLevelUpXp * Math.pow(xpIncreaseFactor, levelsData[userId].level - 1));
         }
 
-        // Mettre en place le cooldown pour l'utilisateur
         cooldowns.set(userId, Date.now() + cooldownTime);
 
-        // Sauvegarder les données des niveaux dans le fichier
         fs.writeFileSync(levelsDataPath, JSON.stringify(levelsData));
     },
 };
